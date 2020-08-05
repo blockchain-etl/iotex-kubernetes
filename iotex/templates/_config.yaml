@@ -1,0 +1,75 @@
+network:
+  {{- if .Values.externalLBp2p }}
+  externalHost: {{ .Values.externalLBp2pIP }}
+  {{- end }}
+  externalPort: {{ .Values.service.p2pPort }}
+  bootstrapNodes:
+  {{- if eq .Values.iotex.network "mainnet" }}
+    - /dns4/bootnode-0.mainnet.iotex.one/tcp/4689/p2p/12D3KooWPfQDF8ASjd4r7jS9e7F1wn6zod7Mf4ERr8etoY6ctQp5
+    - /dns4/bootnode-1.mainnet.iotex.one/tcp/4689/p2p/12D3KooWN4TQ1CWRA7yvJdQCdti1qARLXXu2UEHJfycn3XbnAnRh
+    - /dns4/bootnode-2.mainnet.iotex.one/tcp/4689/p2p/12D3KooWSiktocuUke16bPoW9zrLawEBaEc1UriaPRwm82xbr2BQ
+    - /dns4/bootnode-3.mainnet.iotex.one/tcp/4689/p2p/12D3KooWEsmwaorbZX3HRCnhkMPjMAHzwu3om1pdGrtVm2QaM35n
+  {{- end }}
+  {{- if eq .Values.iotex.network "testnet" }}
+    - /dns4/bootnode-0.testnet.iotex.one/tcp/4689/ipfs/12D3KooWFnaTYuLo8Mkbm3wzaWHtUuaxBRe24Uiopu15Wr5EhD3o
+    - /dns4/bootnode-1.testnet.iotex.one/tcp/4689/ipfs/12D3KooWS7hkdFozeUqriUxv7zw8Y6NCeV8E5HUbgmVkGJUv4jHS
+  {{- end }}
+chain:
+  # If you are a delegate, make sure producerPrivKey is the key for the operator address you have registered.
+  # producerPrivKey: SET YOUR PRIVATE KEY HERE (e.g., 96f0aa5e8523d6a28dc35c927274be4e931e74eaa720b418735debfcbfe712b8)
+  chainDBPath: "{{ .Values.iotex.base_path }}/chain.db"
+  trieDBPath: "{{ .Values.iotex.base_path }}/trie.db"
+  indexDBPath: "{{ .Values.iotex.base_path }}/index.db"
+  candidateIndexDBPath: "{{ .Values.iotex.base_path }}/candidate.index.db"
+  maxCacheSize: 1000
+  # System level action logs is a feature to trace the transactions via contracts.
+  enableSystemLog: true
+  committee:
+    gravityChainAPIs:
+      # please change the infura key to your key (e.g., https://mainnet.infura.io/v3/YOUR_KEY)
+      - {{ .Values.iotex.config.eth_api_url }}
+    numOfRetries: 20
+    paginationSize: 255
+    cacheSize: 1000
+  gravityChainDB:
+    dbPath: "{{ .Values.iotex.base_path }}/poll.db"
+    numRetries: 8
+
+actPool:
+  minGasPrice: "1000000000000"
+
+api:
+  port: {{ .Values.service.rpcPort }}
+  gasStation:
+    defaultGas: 1000000000000
+
+consensus:
+  scheme: ROLLDPOS
+  rollDPoS:
+    fsm:
+      unmatchedEventTTL: 3s
+      unmatchedEventInterval: 100ms
+      acceptBlockTTL: 4s
+      acceptProposalEndorsementTTL: 2s
+      acceptLockEndorsementTTL: 2s
+    delay: 10s
+    consensusDBPath: "{{ .Values.iotex.base_path }}/consensus.db"
+
+blockSync:
+  bufferSize: 400
+  maxRepeat: 3
+  repeatDecayStep: 3
+
+log:
+  zap:
+    level: info
+    encoding: console
+    disableStacktrace: true
+    outputPaths: ["stderr", "stdout"]
+    errorOutputPaths: ["stderr"]
+  stderrRedirectFile: {{ .Values.iotex.base_path }}/s.log
+  stdLogRedirect: false
+
+db:
+  # keep it forever ?
+  historyStateRetention: 1000000000

@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "iotex.fullname" . }}
+  labels:
+{{ include "iotex.labels" . | indent 4 }}
+spec:
+  serviceName: "{{ .Release.Name }}-service"
+  replicas: {{ .Values.replicaCount }} # by default is 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "iotex.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "iotex.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/configmap.yaml: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret.yaml: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        envFrom:
+        - secretRef:
+            name: "{{ .Release.Name }}-env"
+        args:
+          - iotex-server
+          - -config-path=/config/{{ .Values.iotex.configurationFileName }}
+          - -genesis-path={{ .Values.iotex.base_path }}/genesis.yaml
+          - -plugin=gateway
+        workingDir: "{{ .Values.iotex.base_path }}"
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: {{ .Values.service.rpcPort }}
+          name: "{{ .Values.service.rpcPortName }}"
+          protocol: "TCP"
+        - containerPort: {{ .Values.service.p2pPort }}
+          name: "{{ .Values.service.p2pPortName }}"
+          protocol: "TCP"
+        volumeMounts:
+        - name: iotex-pvc
+          mountPath: {{ .Values.iotex.base_path }}
+        - name: scripts
+          mountPath: /scripts
+        - name: config
+          mountPath: /config
+        readinessProbe:
+          httpGet:
+            path: "/readiness"
+            port: 8080
+          initialDelaySeconds: 30
+          timeoutSeconds: 2
+          periodSeconds: 15
+          failureThreshold: 5
+        livenessProbe:
+          exec:
+            command:
+              - /bin/bash
+              - /scripts/check_node_health.sh
+              - "{{ .Values.iotex.base_path }}"
+              - "{{ .Values.iotex.maxHealthyAge }}"
+              - last_synced_block.txt
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+      initContainers:
+      {{- if .Values.iotex_get_genesis }}
+      - name: iotex-get-generis
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["curl", "-o","{{ .Values.iotex.base_path }}/genesis.yaml",
+                  "https://raw.githubusercontent.com/iotexproject/iotex-bootstrap/master/genesis_{{ .Values.iotex.network }}.yaml"]
+        volumeMounts:
+          - name: iotex-pvc
+            mountPath: {{ .Values.iotex.base_path }}
+      {{- end }}
+      volumes:
+      - name: scripts
+        configMap:
+          name: "{{ .Release.Name }}-scripts"
+      - name: config
+        secret:
+          secretName: "{{ .Release.Name }}-config"
+  volumeClaimTemplates:
+  - metadata:
+      name: iotex-pvc
+    spec:
+      accessModes:
+        - {{.Values.persistence.accessMode }}
+      {{- if .Values.persistence.storageClass }}
+      {{- if (eq "-" .Values.persistence.storageClass) }}
+      storageClassName: ""
+      {{- else }}
+      storageClassName: "{{ .Values.persistence.storageClass }}"
+      {{- end }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+      volumeMode: Filesystem

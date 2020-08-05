@@ -1,0 +1,80 @@
+# Default values for iotex.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+terminationGracePeriodSeconds: 30
+image:
+  repository: iotex/iotex-core
+  tag: v1.0.0
+  pullPolicy: Always
+
+service:
+  rpcPortName: jsonrpc
+  rpcPort: "14014"
+  p2pPort: "4689"
+  p2pPortName: p2p
+
+externalLB: false
+externalLBIP: ""
+externalLBSourceRanges: {}
+#  - 203.0.113.2/32
+#  - 203.0.113.3/32
+
+externalLBp2p: false
+externalLBp2pIP: ""
+internalLB: false
+internalLBIP: ""
+
+persistence:
+  enabled: true
+#  storageClass: "default"
+  accessMode: ReadWriteOnce
+  size: "100Gi"
+
+## Configure resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources:
+  requests:
+    cpu: "1000m"
+    memory: "3000Mi"
+  limits:
+    cpu: "3000m"
+    memory: "6000Mi"
+
+# 'nobody' IDs
+securityContext:
+  runAsUser: 65534
+  runAsGroup: 65534
+  fsGroup: 65534
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: "iotex"
+          topologyKey: failure-domain.beta.kubernetes.io/zone
+
+iotex:
+  base_path: "/var/data"
+  configurationFileName: "config.yaml"
+  # mainnet/testnet
+  network: "mainnet"
+  # how many seconds should liveness check wait for a new block.
+  maxHealthyAge: 3600
+  config:
+    # specify ETH archive node RPC here
+    eth_api_url: ""
+
+
+# enable this to run iotex-get-genesis as init container
+iotex_get_genesis: false
+
+livenessProbe:
+  initialDelaySeconds: 600
+  periodSeconds: 600
+  timeoutSeconds: 500
+  successThreshold: 1
+  failureThreshold: 2
