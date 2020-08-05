@@ -1,0 +1,17 @@
+apiVersion: v1
+appVersion: 1.0.0
+description: IoTeX is building the Internet of Trusted Things, an open network where all physical and virtual “things” —
+  humans, machines, and businesses — can interact with full trust and privacy.
+engine: gotpl
+home: https://iotex.io
+keywords:
+- iotex
+- cryptocurrency
+maintainers:
+- email: av@dysnix.com
+  name: voron
+name: iotex
+sources:
+- https://github.com/kubernetes/charts
+- https://github.com/iotexproject/iotex-core/
+version: 0.1.0
