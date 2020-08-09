@@ -33,12 +33,12 @@ kubectl exec -it iotex-0 sh
 
 ### Upgrade cryptonode version 
 
-Let's assume you need to upgrade IoTeX from `v7-release` to `v8-release`. Here is what you need to do:
+Let's assume you need to upgrade IoTeX from `v1.0.0` to `v1.1.0`. Here is what you need to do:
 * update `values-dev.yaml` you used before to deploy IoTeX or create new `values-dev.yaml` file with following content  
 ```yaml
 image:
-  repository: iotex/iotex
-  tag: v8-release
+  repository: iotex/iotex-core
+  tag: v1.0.0
 ```
 * upgrade IoTeX helm release in the cluster, we use release named `iotex` in example below
 ```bash
