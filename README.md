@@ -30,7 +30,7 @@ MASTER_ZONE=us-central1-a
 gcloud container clusters create $CLUSTER_NAME \
     --num-nodes 1 \
     --enable-autoscaling --max-nodes=1 --min-nodes=1 \
-    --machine-type=n1-standard-2 \
+    --machine-type=n1-standard-1 \
     --cluster-version latest \
     --enable-autorepair \
     --enable-ip-alias \
