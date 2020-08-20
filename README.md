@@ -87,7 +87,7 @@ Parameter                       | Description                                   
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```bash
-$ helm install --name iote -f values.yaml charts/iotex
+$ helm install --name iotex ./iotex
 ```
 
 > **Tip**: You can use the default [values.yaml](iotex/values.yaml)
